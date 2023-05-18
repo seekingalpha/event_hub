@@ -1,12 +1,17 @@
 PATH
   remote: .
   specs:
-    event-hub (0.1.0)
+    event_hub (0.1.0)
+      bunny (>= 2.13.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    amq-protocol (2.3.2)
     ast (2.4.2)
+    bunny (2.20.3)
+      amq-protocol (~> 2.3, >= 2.3.1)
+      sorted_set (~> 1, >= 1.0.2)
     diff-lcs (1.5.0)
     json (2.6.3)
     parallel (1.23.0)
@@ -14,6 +19,7 @@ GEM
       ast (~> 2.4.1)
     rainbow (3.1.1)
     rake (13.0.6)
+    rbtree (0.4.6)
     regexp_parser (2.8.0)
     rexml (3.2.5)
     rspec (3.12.0)
@@ -42,13 +48,17 @@ GEM
     rubocop-ast (1.28.1)
       parser (>= 3.2.1.0)
     ruby-progressbar (1.13.0)
+    set (1.0.3)
+    sorted_set (1.0.3)
+      rbtree
+      set (~> 1.0)
     unicode-display_width (2.4.2)
 
 PLATFORMS
   x86_64-darwin-21
 
 DEPENDENCIES
-  event-hub!
+  event_hub!
   rake (~> 13.0)
   rspec (~> 3.0)
   rubocop (~> 1.21)

@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-require_relative "lib/event/hub/version"
+require_relative "lib/event_hub/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "event-hub"
-  spec.version = Event::Hub::VERSION
+  spec.name = "event_hub"
+  spec.version = EventHub::VERSION
   spec.authors = ["Bogdan Guban"]
   spec.email = ["biguban@gmail.com"]
 
   spec.summary = "Event driven inter microservice communication"
   spec.description = "Event driven inter microservice communication"
-  spec.homepage = "https://github.com/seekingalpha/event-hub"
+  spec.homepage = "https://github.com/seekingalpha/event_hub"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Uncomment to register a new dependency of your gem
-  # spec.add_dependency "example-gem", "~> 1.0"
+  spec.add_dependency "bunny", '>= 2.13.0'
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

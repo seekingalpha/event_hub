@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in event-hub.gemspec
+# Specify your gem's dependencies in event_hub.gemspec
 gemspec
 
 gem "rake", "~> 13.0"
