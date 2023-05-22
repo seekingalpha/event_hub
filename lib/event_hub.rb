@@ -2,6 +2,7 @@
 
 require_relative "event_hub/version"
 require_relative "event_hub/event"
+require_relative "event_hub/message"
 require_relative "event_hub/adapters"
 
 class EventHub
@@ -15,16 +16,10 @@ class EventHub
   end
 
   def self.subscribe
-    instance.adapter.subscribe do |delivery_info, properties, body|
-
-      event = delivery_info[:routing_key].to_sym
-      handler = @config.dig(:subscribe, event, :handler).new(body: JSON.parse(body)).call
-      # event = delivery_info[:routing_key]
-      # content_type = properties[:content_type]
-      # body
+    instance.adapter.subscribe do |message|
+      handler = @config.dig(:subscribe, message.event.to_sym, :handler).new(message).call
       # TODO: handle exceptions
-      res = instance.adapter.channel.ack(delivery_info.delivery_tag)
-      puts res
+      message.ack
     end
   end
 
@@ -40,6 +35,6 @@ class EventHub
   end
 
   def adapter
-    @adapter ||= Adapters::Bunny.new(@config)
+    @adapter ||= Adapters.const_get(@config[:adapter].camelize).new(@config)
   end
 end

@@ -33,6 +33,8 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   spec.add_dependency "bunny", '>= 2.13.0'
+  spec.add_dependency "aws-sdk-sns"
+  spec.add_dependency "aws-sdk-sqs"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

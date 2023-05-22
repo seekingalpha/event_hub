@@ -6,7 +6,10 @@ class EventHub::Adapters::Bunny
   end
 
   def subscribe(&block)
-    queue.subscribe(block: true, manual_ack: true, &block)
+    queue.subscribe(block: true, manual_ack: true) do |delivery_info, properties, body|
+      message = Message.new(delivery_info, properties, body, channel)
+      block.call(message)
+    end
   end
 
   def publish(message, routing_key:)
