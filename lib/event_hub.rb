@@ -28,6 +28,10 @@ class EventHub
     instance.adapter.publish(event.to_json, routing_key: event.class.event)
   end
 
+  def self.adapter
+    instance.adapter
+  end
+
   def initialize(config)
     @config = config
     @config[:subscribe] ||= {}
