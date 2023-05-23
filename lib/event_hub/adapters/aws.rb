@@ -9,7 +9,7 @@ class EventHub::Adapters::Aws
   def subscribe(&block)
     loop do
       receive_message_result = sqs.receive_message({
-        queue_url: @config[:queue],
+        queue_url: @config[:queue_url],
         message_attribute_names: ["All"], # Receive all custom attributes.
         max_number_of_messages: 10, # Receive at most one message.
         wait_time_seconds: 15 # Do not wait to check for the message.
@@ -34,22 +34,31 @@ class EventHub::Adapters::Aws
   end
 
   def setup_bindings
-    # @config.subscribe.each_key do |routing_key|
-    #   queue.bind(exchange, routing_key: routing_key)
-    # end
+    policy = { event: @config[:subscribe].keys }.to_json
+    subscription = topic.subscriptions.find { |s| s.attributes['Endpoint'] == @config[:queue_arn] }
+    if subscription
+      subscription.set_attributes({
+        attribute_name: "FilterPolicy",
+        attribute_value: policy
+      })
+    else
+      topic.subscribe({
+        protocol: 'sqs',
+        attributes: {'FilterPolicy' => policy },
+        endpoint: @config[:queue_arn]
+      })
+    end
   end
 
   def delete_message(receipt_handle)
     sqs.delete_message(
-      queue_url: @config[:queue],
+      queue_url: @config[:queue_url],
       receipt_handle: receipt_handle
     )
   end
 
-  private
-
   def topic
-    @topic ||= sns.topic(@config[:exchange])
+    @topic ||= sns.topic(@config[:exchange_arn])
   end
 
   def sns
@@ -59,20 +68,4 @@ class EventHub::Adapters::Aws
   def sqs
     @sns ||= Aws::SQS::Client.new(region: 'us-west-2')
   end
-
-  # def exchange
-  #   # @exchange ||= channel.direct(@config[:exchange])
-  # end
-  #
-  # def queue
-  #   @queue ||= channel.queue(@config[:queue], durable: true)
-  # end
-  #
-  # def connection
-  #   return @connection if defined?(@connection)
-  #
-  #   @connection = ::Bunny.new # TODO: config
-  #   @connection.start
-  #   @connection
-  # end
 end
