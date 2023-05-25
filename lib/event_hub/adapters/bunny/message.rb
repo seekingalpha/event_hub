@@ -21,4 +21,8 @@ class EventHub::Adapters::Bunny::Message < EventHub::Message
   def ack
     @channel.ack(@delivery_info.delivery_tag)
   end
+
+  def reject
+    @channel.reject(@delivery_info.delivery_tag)
+  end
 end

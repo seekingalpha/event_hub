@@ -2,6 +2,7 @@
 
 require_relative "event_hub/version"
 require_relative "event_hub/event"
+require_relative "event_hub/handler"
 require_relative "event_hub/message"
 require_relative "event_hub/adapters"
 
@@ -17,9 +18,11 @@ class EventHub
 
   def self.subscribe
     instance.adapter.subscribe do |message|
-      handler = @config.dig(:subscribe, message.event.to_sym, :handler).new(message).call
-      # TODO: handle exceptions
+      @config.dig(:subscribe, message.event.to_sym, :handler).new(message).call
       message.ack
+    rescue Exception => e
+      @config[:on_failure].call(e, message) if @config[:on_failure]
+      message.reject
     end
   end
 

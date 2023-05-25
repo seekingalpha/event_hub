@@ -21,6 +21,13 @@ class EventHub::Adapters::Aws::Message < EventHub::Message
     @adapter.delete_message(@message.receipt_handle)
   end
 
+  def reject
+    if @adapter.config[:dead_queue_url]
+      # TODO: publish the message to the dead_queue
+    end
+    ack
+  end
+
   private
 
   #{

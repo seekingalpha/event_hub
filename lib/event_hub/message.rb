@@ -15,4 +15,9 @@ class EventHub::Message
   def ack
     raise NotImplementedError
   end
+
+  # moves message to the dead queue
+  def reject
+    raise NotImplementedError
+  end
 end

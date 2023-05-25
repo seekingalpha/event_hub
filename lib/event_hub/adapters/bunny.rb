@@ -6,6 +6,7 @@ class EventHub::Adapters::Bunny
   end
 
   def subscribe(&block)
+    channel.prefetch(1)
     queue.subscribe(block: true, manual_ack: true) do |delivery_info, properties, body|
       message = Message.new(delivery_info, properties, body, channel)
       block.call(message)
@@ -13,7 +14,7 @@ class EventHub::Adapters::Bunny
   end
 
   def publish(message, routing_key:)
-    exchange.publish(message, routing_key: routing_key)
+    exchange.publish(message, routing_key: routing_key, persistent: true)
   end
 
   def setup_bindings

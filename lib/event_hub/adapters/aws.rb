@@ -2,6 +2,8 @@ require 'aws-sdk-sns'
 require 'aws-sdk-sqs'
 
 class EventHub::Adapters::Aws
+  attr_reader :config
+
   def initialize(config)
     @config = config
   end
@@ -28,8 +30,8 @@ class EventHub::Adapters::Aws
     topic.publish({
       message: message,
       message_attributes: {event: {data_type: 'String', string_value: routing_key.to_s}},
-      message_group_id: 'message_group_id', # TODO: read why it's needed
-      message_deduplication_id: SecureRandom.uuid # TODO: read why it's needed
+      message_group_id: 'message_group_id',
+      message_deduplication_id: SecureRandom.uuid
     })
   end
 
