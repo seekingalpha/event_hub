@@ -1,23 +1,24 @@
 class EventHub::Adapters::Test::Message < EventHub::Message
-  def initialize(event, queue)
-    @event = event
+  def initialize(body, attributes = {}, queue)
+    @body = body
+    @attributes = attributes
     @queue = queue
   end
 
   def attributes
-    {}
+    @attributes
   end
 
   def body
-    @event.body
+    @body
   end
 
   def event
-    @event.class.event
+    @attributes[:event]
   end
 
   def version
-    @event.class.version
+    @attributes[:version]
   end
 
   def ack
