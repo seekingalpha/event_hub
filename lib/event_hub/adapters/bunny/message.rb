@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Adapters::Bunny::Message < EventHub::Message
   def initialize(delivery_info, properties, body, channel)
     @delivery_info = delivery_info
@@ -10,9 +12,7 @@ class EventHub::Adapters::Bunny::Message < EventHub::Message
     @properties
   end
 
-  def body
-    @body
-  end
+  attr_reader :body
 
   def event
     @properties[:event]

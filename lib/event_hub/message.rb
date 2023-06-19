@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Message
   def body
     raise NotImplementedError

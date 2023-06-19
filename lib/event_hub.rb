@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "event_hub/version"
-require_relative "event_hub/event"
-require_relative "event_hub/handler"
-require_relative "event_hub/message"
-require_relative "event_hub/adapters"
+require_relative 'event_hub/version'
+require_relative 'event_hub/event'
+require_relative 'event_hub/handler'
+require_relative 'event_hub/message'
+require_relative 'event_hub/adapters'
 
 class EventHub
   class NoHandlerDefined < StandardError; end
@@ -35,8 +35,8 @@ class EventHub
       message.ack
     rescue RejectMessage
       message.reject
-    rescue Exception => e
-      @config[:on_failure].call(e, message) if @config[:on_failure]
+    rescue Exception => e # rubocop:disable Lint/RescueException
+      @config[:on_failure]&.call(e, message)
       message.reject
     end
   end
@@ -52,7 +52,7 @@ class EventHub
   def initialize(config)
     @config = config
     @config[:subscribe] ||= {}
-    @config[:subscribe].each_value { |config| config[:handler] = config[:handler].constantize }
+    @config[:subscribe].each_value { |subscription| subscription[:handler] = subscription[:handler].constantize }
   end
 
   def adapter

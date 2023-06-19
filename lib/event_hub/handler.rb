@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Handler
   attr_reader :message
 

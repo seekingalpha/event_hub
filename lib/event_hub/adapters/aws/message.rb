@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Adapters::Aws::Message < EventHub::Message
   def initialize(adapter, message)
     @adapter = adapter
@@ -5,7 +7,7 @@ class EventHub::Adapters::Aws::Message < EventHub::Message
   end
 
   def attributes
-    @headers ||= parsed_body['MessageAttributes'].transform_values { |v| v['Value'] }
+    @attributes ||= parsed_body['MessageAttributes'].transform_values { |v| v['Value'] }
   end
 
   def body
@@ -34,7 +36,7 @@ class EventHub::Adapters::Aws::Message < EventHub::Message
 
   private
 
-  #{
+  # {
   #   "Type" : "Notification",
   #   "MessageId" : "025727dd-bb27-5c53-8a79-7b38f0cfe19a",
   #   "SequenceNumber" : "10000000000000020000",

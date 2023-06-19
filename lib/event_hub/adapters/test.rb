@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Adapters::Test
   attr_accessor :queue
 

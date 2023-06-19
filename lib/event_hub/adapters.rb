@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module EventHub::Adapters; end
 require_relative 'adapters/bunny'
 require_relative 'adapters/bunny/message'

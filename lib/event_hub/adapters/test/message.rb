@@ -1,17 +1,13 @@
+# frozen_string_literal: true
+
 class EventHub::Adapters::Test::Message < EventHub::Message
-  def initialize(body, attributes = {}, queue)
+  def initialize(body, queue, attributes = {})
     @body = body
     @attributes = attributes
     @queue = queue
   end
 
-  def attributes
-    @attributes
-  end
-
-  def body
-    @body
-  end
+  attr_reader :attributes, :body
 
   def event
     @attributes[:event]

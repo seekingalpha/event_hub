@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class EventHub::Event
   def publish
     EventHub.publish(self)

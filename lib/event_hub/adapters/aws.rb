@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'aws-sdk-sns'
 require 'aws-sdk-sqs'
 
@@ -11,11 +13,11 @@ class EventHub::Adapters::Aws
   def subscribe(&block)
     loop do
       receive_message_result = sqs.receive_message({
-        queue_url: @config[:queue_url],
-        message_attribute_names: ["All"], # Receive all custom attributes.
-        max_number_of_messages: 10, # Receive at most one message.
-        wait_time_seconds: 15 # Do not wait to check for the message.
-      })
+                                                     queue_url: @config[:queue_url],
+                                                     message_attribute_names: ['All'], # Receive all custom attributes.
+                                                     max_number_of_messages: 10, # Receive at most one message.
+                                                     wait_time_seconds: 15 # Do not wait to check for the message.
+                                                   })
 
       # Display information about the message.
       # Display the message's body and each custom attribute value.
@@ -28,14 +30,14 @@ class EventHub::Adapters::Aws
 
   def publish(event)
     topic.publish({
-      message: event.to_json,
-      message_attributes: {
-        event: { data_type: 'String', string_value: event.class.event },
-        version: { data_type: 'String', string_value: event.class.version },
-      },
-      message_group_id: 'message_group_id',
-      message_deduplication_id: SecureRandom.uuid
-    })
+                    message: event.to_json,
+                    message_attributes: {
+                      event: { data_type: 'String', string_value: event.class.event },
+                      version: { data_type: 'String', string_value: event.class.version },
+                    },
+                    message_group_id: 'message_group_id',
+                    message_deduplication_id: SecureRandom.uuid
+                  })
   end
 
   def setup_bindings
@@ -43,15 +45,15 @@ class EventHub::Adapters::Aws
     subscription = topic.subscriptions.find { |s| s.attributes['Endpoint'] == @config[:queue_arn] }
     if subscription
       subscription.set_attributes({
-        attribute_name: "FilterPolicy",
-        attribute_value: policy
-      })
+                                    attribute_name: 'FilterPolicy',
+                                    attribute_value: policy
+                                  })
     else
       topic.subscribe({
-        protocol: 'sqs',
-        attributes: {'FilterPolicy' => policy },
-        endpoint: @config[:queue_arn]
-      })
+                        protocol: 'sqs',
+                        attributes: { 'FilterPolicy' => policy },
+                        endpoint: @config[:queue_arn]
+                      })
     end
   end
 
@@ -71,6 +73,6 @@ class EventHub::Adapters::Aws
   end
 
   def sqs
-    @sns ||= Aws::SQS::Client.new(@config[:credentials] || {})
+    @sqs ||= Aws::SQS::Client.new(@config[:credentials] || {})
   end
 end
