@@ -121,7 +121,24 @@ The subscriber should reject the unsuported version and notify the responsible d
 problem and update the handler.
 
 If the event change just extends the contract then the minor version should be changed. The subscriber should
-notify the development team but still handle the event. 
+notify the development team but still handle the event.
+
+## Race conditions
+
+It can happen that the older event will be processed later and overrides the previous event changes. It especially
+can happen if you use several listener daemons. But still if you use a single daemon you are not protected because
+the event can get back into the queue and change the order.
+
+As a solution you can add a timestamp to the event and on the subscriber side add a field to the model you are
+going to update. Each time you receive a new event you should check that the event timestamp is newer that the
+timestamp in the DB. In this case you can be sure that you've received the latest event.
+
+There are still can be a problem with the above approach. It can happen that the publisher is run on several
+servers and they have a small difference in their clock. If you have so frequently updated models then probably
+you need to use Redis counter to generate the event "update version".
+
+On the subscriber side you can use Redlock to prevent race conditions. But pay attention that Redis adds lag to
+the communication so you don't need it for all the models.                           
 
 ## Development
 
