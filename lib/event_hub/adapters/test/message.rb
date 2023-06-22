@@ -1,28 +1,44 @@
 # frozen_string_literal: true
 
-class EventHub::Adapters::Test::Message < EventHub::Message
-  def initialize(body, queue, attributes = {})
-    @body = body
-    @attributes = attributes
-    @queue = queue
-  end
+class EventHub
+  module Adapters
+    class Test
+      class Message < EventHub::Message
+        def initialize(event, queue, attributes = {})
+          @event = event
+          @body = event.body
+          @attributes = attributes
+          @queue = queue
+        end
 
-  attr_reader :attributes, :body
+        attr_reader :attributes, :body
 
-  def event
-    @attributes[:event]
-  end
+        def event
+          @event.class.event
+        end
 
-  def version
-    @attributes[:version]
-  end
+        def version
+          @event.class.version
+        end
 
-  def ack
-    @ack = true
-    @queue.delete(self)
-  end
+        def ack
+          @ack = true
+          @queue.delete(self)
+        end
 
-  def ack?
-    !!@ack
+        def reject
+          @rejected = true
+          @queue.delete(self)
+        end
+
+        def ack?
+          !!@ack
+        end
+
+        def rejected?
+          !!@rejected
+        end
+      end
+    end
   end
 end

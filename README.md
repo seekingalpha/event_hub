@@ -1,24 +1,144 @@
 # EventHub
 
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/event_hub`. To experiment with that code, run `bin/console` for an interactive prompt.
+This library structurizes the application code for inter microservice communication.
+Each micro-service has their own queue. All those queues are bind to the single exchange. So all the
+micro-services can publish events to that exchange and only the events that are needed will get into
+the corresponding micro-service's queue.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+You don't need to specify this gem directly in your Gemfile. Instead you need to add one of (or many) 
+"adapter" gems like `event_hub_aws` for AWS or `event_hub_bunny` for RabbitMQ. This library will be added
+as a dependency.
 
-Install the gem and add to the application's Gemfile by executing:
+## Configuration
 
-    $ bundle add UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+Create a config file where you should specify events you need in this specific app. In the subscribe
+section specify events you wanna receive and the handlers.
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+```yaml
+# config/event_hub.yml
 
-    $ gem install UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+development:
+  queue: my-micro-service-events
+  exchange: event-hub
+  adapter: Bunny
+  subscribe:
+    user_registered:
+      handler: Handlers::UserRegistered
+```
 
-## Usage
+Then apply this config:
 
-TODO: Write usage instructions here
+```ruby
+# config/initializers/event_hub.rb
+
+config = Rails.application.config_for(:event_hub)
+
+# This block will be called in case of problems during the event handling
+config[:on_failure] = lambda do |e, _message|
+  raise(e) if Rails.env.test?
+  # notify developers about the problem
+end
+
+EventHub.configure(config)
+```
+
+You need to implement the `event` and `event handler`:
+
+```ruby
+# app/event_hub/events/user_registered.rb
+class Events::TickerUpserted < EventHub::Event
+  event :user_registered
+  version '1.1'
+
+  attribute :id
+  attribute :email
+  attribute :name
+end
+
+# app/event_hub/handlers/user_registered.rb
+class Handlers::UserRegistered < EventHub::Handler
+  version '1.1'
+  
+  def call
+    User.create(event.as_json)
+  end
+
+  # this method will be called in case if the received event version isn't eql to the handler version
+  def on_incorrect_version
+    event_major, event_minor = message.version.split('.')
+    handler_major, handler_minor = self.class.version.split('.')
+
+    if event_major != handler_major || event_minor < handler_minor
+      # TODO: notify rollbar
+      raise IgnoreMessage
+    end
+  end
+
+  private
+
+  def event
+    @event ||= Events::UserRegistered.new(JSON.parse(message.body))
+  end
+end
+```
+
+To bind the exchange to the queue run:
+
+```ruby
+EventHub.adapter.setup_bindings
+```
+You need to run this command each time you change the `subscription` part of the config file.
+You can create a migration with `EventHub.adapter.setup_bindings` in your app each time you 
+need to update bindings. 
+
+### Listen to events
+
+To receive events from other system you need to run a daemon process that will call blocking method:
+```ruby
+EventHub.subscribe
+```
+This method listens for events and call corresponding handlers.
+
+### Event publishing
+
+To publish an event you need to create its instance and call its `publish` method.
+
+```ruby
+Events::UserRegistered.new(id: user.id, email: user.email).publish
+```
+
+## Event versions
+
+The event routing is done based on the event name. So if you want let's say to add an attribute to the event
+you must upgrade its version. We recommend two-level version structure. 
+
+If the event change breaks the contract the published should publish both versions of the event for some time.
+For the new event the major part of the version must be changed.
+The subscriber should reject the unsuported version and notify the responsible developers. It can be done in
+`on_incorrect_version` handler method. So the micro-service's development team will have time to react onto the
+problem and update the handler.
+
+If the event change just extends the contract then the minor version should be changed. The subscriber should
+notify the development team but still handle the event.
+
+## Race conditions
+
+It can happen that the older event will be processed later and overrides the previous event changes. It especially
+can happen if you use several listener daemons. But still if you use a single daemon you are not protected because
+the event can get back into the queue and change the order.
+
+As a solution you can add a timestamp to the event and on the subscriber side add a field to the model you are
+going to update. Each time you receive a new event you should check that the event timestamp is newer that the
+timestamp in the DB. In this case you can be sure that you've received the latest event.
+
+There are still can be a problem with the above approach. It can happen that the publisher is run on several
+servers and they have a small difference in their clock. If you have so frequently updated models then probably
+you need to use Redis counter to generate the event "update version".
+
+On the subscriber side you can use Redlock to prevent race conditions. But pay attention that Redis adds lag to
+the communication so you don't need it for all the models.                           
 
 ## Development
 

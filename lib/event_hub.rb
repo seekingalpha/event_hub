@@ -13,6 +13,10 @@ class EventHub
   class RejectMessage < StandardError; end
 
   def self.configure(config)
+    if !config[:on_failure] || !config[:on_failure].respond_to?(:call) || config[:on_failure].arity != 2
+      raise ArgumentError, 'EventHub configuration must have `on_failure` callable options with arity == 2'
+    end
+
     @config = config
     @instance = nil
   end
@@ -52,10 +56,10 @@ class EventHub
   def initialize(config)
     @config = config
     @config[:subscribe] ||= {}
-    @config[:subscribe].each_value { |subscription| subscription[:handler] = subscription[:handler].constantize }
+    @config[:subscribe].each_value { |subscription| subscription[:handler] = Object.const_get(subscription[:handler]) }
   end
 
   def adapter
-    @adapter ||= Adapters.const_get(@config[:adapter].camelize).new(@config)
+    @adapter ||= Adapters.const_get(@config[:adapter]).new(@config)
   end
 end
