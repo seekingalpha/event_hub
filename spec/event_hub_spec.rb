@@ -64,7 +64,7 @@ RSpec.describe EventHub do
   it 'cannot be initialized without on_failure callback' do
     expect { EventHub.configure({}) }.to raise_exception(ArgumentError)
     expect { EventHub.configure(on_failure: :bla) }.to raise_exception(ArgumentError)
-    expect { EventHub.configure(on_failure: ->{ :bla }) }.to raise_exception(ArgumentError)
-    expect { EventHub.configure(on_failure: ->(e, message){ :bla }) }.not_to raise_exception(ArgumentError)
+    expect { EventHub.configure(on_failure: -> { :bla }) }.to raise_exception(ArgumentError)
+    expect { EventHub.configure(on_failure: ->(_e, _message) { :bla }) }.not_to raise_exception(ArgumentError)
   end
 end
