@@ -11,7 +11,7 @@ You don't need to specify this gem directly in your Gemfile. Instead you need to
 "adapter" gems like `event_hub_aws` for AWS or `event_hub_bunny` for RabbitMQ. This library will be added
 as a dependency.
 
-## Usage
+## Configuration
 
 Create a config file where you should specify events you need in this specific app. In the subscribe
 section specify events you wanna receive and the handlers.
@@ -84,10 +84,29 @@ class Handlers::UserRegistered < EventHub::Handler
 end
 ```
 
-To bind the exchange to the queue
+To bind the exchange to the queue run:
 
 ```ruby
 EventHub.adapter.setup_bindings
+```
+You need to run this command each time you change the `subscription` part of the config file.
+You can create a migration with `EventHub.adapter.setup_bindings` in your app each time you 
+need to update bindings. 
+
+### Listen to events
+
+To receive events from other system you need to run a daemon process that will call blocking method:
+```ruby
+EventHub.subscribe
+```
+This method listens for events and call corresponding handlers.
+
+### Event publishing
+
+To publish an event you need to create its instance and call its `publish` method.
+
+```ruby
+Events::UserRegistered.new(id: user.id, email: user.email).publish
 ```
 
 ## Event versions
