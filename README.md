@@ -1,24 +1,108 @@
 # EventHub
 
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/event_hub`. To experiment with that code, run `bin/console` for an interactive prompt.
+This library structurizes the application code for inter microservice communication.
+Each micro-service has their own queue. All those queues are bind to the single exchange. So all the
+micro-services can publish events to that exchange and only the events that are needed will get into
+the corresponding micro-service's queue.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-    $ bundle add UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
-
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-    $ gem install UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+You don't need to specify this gem directly in your Gemfile. Instead you need to add one of (or many) 
+"adapter" gems like `event_hub_aws` for AWS or `event_hub_bunny` for RabbitMQ. This library will be added
+as a dependency.
 
 ## Usage
 
-TODO: Write usage instructions here
+Create a config file where you should specify events you need in this specific app. In the subscribe
+section specify events you wanna receive and the handlers.
+
+```yaml
+# config/event_hub.yml
+
+development:
+  queue: my-micro-service-events
+  exchange: event-hub
+  adapter: Bunny
+  subscribe:
+    user_registered:
+      handler: Handlers::UserRegistered
+```
+
+Then apply this config:
+
+```ruby
+# config/initializers/event_hub.rb
+
+config = Rails.application.config_for(:event_hub)
+
+# This block will be called in case of problems during the event handling
+config[:on_failure] = lambda do |e, _message|
+  raise(e) if Rails.env.test?
+  # notify developers about the problem
+end
+
+EventHub.configure(config)
+```
+
+You need to implement the `event` and `event handler`:
+
+```ruby
+# app/event_hub/events/user_registered.rb
+class Events::TickerUpserted < EventHub::Event
+  event :user_registered
+  version '1.1'
+
+  attribute :id
+  attribute :email
+  attribute :name
+end
+
+# app/event_hub/handlers/user_registered.rb
+class Handlers::UserRegistered < EventHub::Handler
+  version '1.1'
+  
+  def call
+    User.create(event.as_json)
+  end
+
+  # this method will be called in case if the received event version isn't eql to the handler version
+  def on_incorrect_version
+    event_major, event_minor = message.version.split('.')
+    handler_major, handler_minor = self.class.version.split('.')
+
+    if event_major != handler_major || event_minor < handler_minor
+      # TODO: notify rollbar
+      raise IgnoreMessage
+    end
+  end
+
+  private
+
+  def event
+    @event ||= Events::UserRegistered.new(JSON.parse(message.body))
+  end
+end
+```
+
+To bind the exchange to the queue
+
+```ruby
+EventHub.adapter.setup_bindings
+```
+
+## Event versions
+
+The event routing is done based on the event name. So if you want let's say to add an attribute to the event
+you must upgrade its version. We recommend two-level version structure. 
+
+If the event change breaks the contract the published should publish both versions of the event for some time.
+For the new event the major part of the version must be changed.
+The subscriber should reject the unsuported version and notify the responsible developers. It can be done in
+`on_incorrect_version` handler method. So the micro-service's development team will have time to react onto the
+problem and update the handler.
+
+If the event change just extends the contract then the minor version should be changed. The subscriber should
+notify the development team but still handle the event. 
 
 ## Development
 

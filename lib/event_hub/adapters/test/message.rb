@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class EventHub::Adapters::Test::Message < EventHub::Message
-  def initialize(body, queue, attributes = {})
-    @body = body
+  def initialize(event, queue, attributes = {})
+    @event = event
+    @body = event.body
     @attributes = attributes
     @queue = queue
   end
@@ -10,11 +11,11 @@ class EventHub::Adapters::Test::Message < EventHub::Message
   attr_reader :attributes, :body
 
   def event
-    @attributes[:event]
+    @event.class.event
   end
 
   def version
-    @attributes[:version]
+    @event.class.version
   end
 
   def ack
@@ -22,7 +23,16 @@ class EventHub::Adapters::Test::Message < EventHub::Message
     @queue.delete(self)
   end
 
+  def reject
+    @rejected = true
+    @queue.delete(self)
+  end
+
   def ack?
     !!@ack
+  end
+
+  def rejected?
+    !!@rejected
   end
 end

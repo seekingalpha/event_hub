@@ -52,10 +52,10 @@ class EventHub
   def initialize(config)
     @config = config
     @config[:subscribe] ||= {}
-    @config[:subscribe].each_value { |subscription| subscription[:handler] = subscription[:handler].constantize }
+    @config[:subscribe].each_value { |subscription| subscription[:handler] = Object.const_get(subscription[:handler]) }
   end
 
   def adapter
-    @adapter ||= Adapters.const_get(@config[:adapter].camelize).new(@config)
+    @adapter ||= Adapters.const_get(@config[:adapter]).new(@config)
   end
 end
