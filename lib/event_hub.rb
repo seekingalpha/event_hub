@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'active_support/callbacks'
 require_relative 'event_hub/version'
 require_relative 'event_hub/event'
 require_relative 'event_hub/handler'
@@ -31,10 +32,7 @@ class EventHub
       raise NoHandlerDefined unless handler_class
 
       handler = handler_class.new(message)
-      handler.validate!
-
-      handler.call
-      message.ack
+      handler.handle
     rescue IgnoreMessage
       message.ack
     rescue RejectMessage

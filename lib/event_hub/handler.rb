@@ -2,7 +2,18 @@
 
 class EventHub
   class Handler
+    include ::ActiveSupport::Callbacks
+    define_callbacks :handle
+
     attr_reader :message
+
+    def handle
+      run_callbacks :handle do
+        validate!
+        call
+        @message.ack
+      end
+    end
 
     def self.version(version = nil)
       @version = version if version

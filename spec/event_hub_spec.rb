@@ -2,10 +2,13 @@
 
 class MyHandler < EventHub::Handler
   version '1.1'
+  set_callback :handle, :before, :handle_callback
 
   def call
     self.class.handled_messages << message
   end
+
+  def handle_callback; end
 
   def on_incorrect_version; end
 
@@ -19,7 +22,11 @@ class MyEvent < EventHub::Event
   event :my_event
   version '1.1'
 
+  set_callback :publish, :after, :publish_callback
+
   attribute :id
+
+  def publish_callback; end
 end
 
 class MyEvent2 < EventHub::Event
@@ -46,12 +53,14 @@ RSpec.describe EventHub do
 
   it 'publishes and subscribes' do
     event = MyEvent.new(id: 1)
+    expect(event).to receive(:publish_callback).once
     expect { event.publish }.to change(EventHub.adapter.queue, :size).by(1)
     message = EventHub.adapter.queue.first
     expect(message.event).to eq(event.class.event)
     expect(message.version).to eq(event.class.version)
     expect(message.body).to eq(event.body)
 
+    expect_any_instance_of(MyHandler).to receive(:handle_callback).once
     expect { EventHub.subscribe }.to change(MyHandler.handled_messages, :size).by(1)
   end
 
