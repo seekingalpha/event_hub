@@ -4,6 +4,9 @@ require 'json'
 
 class EventHub
   class Event
+    include ::ActiveSupport::Callbacks
+    define_callbacks :publish
+
     def initialize(hash = {})
       hash.transform_keys(&:to_s).slice(*self.class.attributes.keys).each do |attr, val|
         public_send("#{attr}=", val)
@@ -11,7 +14,9 @@ class EventHub
     end
 
     def publish
-      EventHub.publish(self)
+      run_callbacks :publish do
+        EventHub.publish(self)
+      end
     end
 
     def body

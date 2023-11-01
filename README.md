@@ -51,15 +51,23 @@ You need to implement the `event` and `event handler`:
 class Events::TickerUpserted < EventHub::Event
   event :user_registered
   version '1.1'
+  set_callback :publish, :after, :log
 
   attribute :id
   attribute :email
   attribute :name
+  
+  private
+  
+  def log
+    LogStasher.warn(event: :publish_event, event_name: self.class.event, attrs: as_json)
+  end
 end
 
 # app/event_hub/handlers/user_registered.rb
 class Handlers::UserRegistered < EventHub::Handler
   version '1.1'
+  set_callback :handle, :before, :log
   
   def call
     User.create(event.as_json)
@@ -77,6 +85,10 @@ class Handlers::UserRegistered < EventHub::Handler
   end
 
   private
+  
+  def log
+    LogStasher.warn(event: :handle_event, event_name: @message.event, attrs: @message.attributes)
+  end
 
   def event
     @event ||= Events::UserRegistered.new(JSON.parse(message.body))
